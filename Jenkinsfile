@@ -74,27 +74,14 @@ pipeline {
                 """
             }
         }
-
         stage('🧪 Verify Image') {
             steps {
-                sh """
-                    echo "=== Image Verification ==="
+                sh '''
+                echo "=== Image Verification ==="
+                echo "Checking Laravel installation..."
 
-                    echo "1. Checking JAR exists inside image..."
-                    docker run --rm --entrypoint ls ${CI_IMAGE} -lh /app/app.jar
-                    echo "✅ JAR found"
-
-                    echo "2. Checking Java inside image..."
-                    docker run --rm --entrypoint java ${CI_IMAGE} -version
-                    echo "✅ Java OK"
-
-                    echo "3. Checking exposed port..."
-                    docker inspect ${CI_IMAGE} \\
-                        --format='Port: {{json .Config.ExposedPorts}}'
-                    echo "✅ Port OK"
-
-                    echo "✅ Image verification passed"
-                """
+                docker run --rm laravel-devops:${BUILD_TAG} php artisan --version
+                '''
             }
         }
 
