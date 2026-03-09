@@ -59,22 +59,14 @@ pipeline {
             }
         }
 
-        stage('🐳 Docker Build') {
-            steps {
-                sh """
-                    echo "Building: ${CI_IMAGE}"
-
-                    docker build \\
-                        --tag ${CI_IMAGE} \\
-                        --file Dockerfile \\
-                        .
-
-                    echo "✅ Build successful"
-                    docker images ${CI_IMAGE}
-                """
+                stage('🐳 Build Docker Image') {
+                steps {
+                        sh '''
+                        docker build -t laravel-devops:${BUILD_TAG} .
+                        '''
             }
         }
-        stage('🧪 Verify Image') {
+                stage('🧪 Verify Image') {
             steps {
                 sh '''
                 echo "=== Image Verification ==="
