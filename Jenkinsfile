@@ -67,16 +67,13 @@ pipeline {
             }
         }
                 stage('🧪 Verify Image') {
-            steps {
-                sh '''
-                echo "=== Image Verification ==="
-                echo "Checking Laravel installation..."
-
-                docker run --rm laravel-devops:${BUILD_TAG} php artisan --version
-                '''
-            }
-        }
-
+                    steps {
+                        sh '''
+                        echo "=== Image Verification ==="
+                        docker run --rm --entrypoint="" laravel-devops:${IMAGE_TAG} php artisan --version
+                        '''
+                    }
+               }
         stage('🔒 Security Scan') {
             steps {
                 sh """
