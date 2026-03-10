@@ -1,12 +1,12 @@
 pipeline {
 
-    agent {
-        docker {
-            image 'docker:latest'?
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
-        }
-    }
-    // agent any
+    // agent {
+    //     docker {
+    //         image 'docker:latest'?
+    //         args '-v /var/run/docker.sock:/var/run/docker.sock'
+    //     }
+    // }
+    agent any
 
     options {
         buildDiscarder(logRotator(numToKeepStr: '10'))
@@ -59,45 +59,21 @@ pipeline {
             }
         }
 
-        stage('🐳 Docker Build') {
-            steps {
-                sh """
-                    echo "Building: ${CI_IMAGE}"
-
-                    docker build \\
-                        --tag ${CI_IMAGE} \\
-                        --file Dockerfile \\
-                        .
-
-                    echo "✅ Build successful"
-                    docker images ${CI_IMAGE}
-                """
+                stage('🐳 Build Docker Image') {
+                steps {
+                        sh '''
+                        docker build -t laravel-devops:${BUILD_TAG} .
+                        '''
             }
         }
-
-        stage('🧪 Verify Image') {
-            steps {
-                sh """
-                    echo "=== Image Verification ==="
-
-                    echo "1. Checking JAR exists inside image..."
-                    docker run --rm --entrypoint ls ${CI_IMAGE} -lh /app/app.jar
-                    echo "✅ JAR found"
-
-                    echo "2. Checking Java inside image..."
-                    docker run --rm --entrypoint java ${CI_IMAGE} -version
-                    echo "✅ Java OK"
-
-                    echo "3. Checking exposed port..."
-                    docker inspect ${CI_IMAGE} \\
-                        --format='Port: {{json .Config.ExposedPorts}}'
-                    echo "✅ Port OK"
-
-                    echo "✅ Image verification passed"
-                """
-            }
-        }
-
+                stage('🧪 Verify Image') {
+                    steps {
+                        sh '''
+                        echo "=== Image Verification ==="
+                        docker run --rm --entrypoint="" laravel-devops:${IMAGE_TAG} php artisan --version
+                        '''
+                    }
+               }
         stage('🔒 Security Scan') {
             steps {
                 sh """
