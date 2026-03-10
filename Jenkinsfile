@@ -2,12 +2,11 @@ pipeline {
 
     // agent {
     //     docker {
-    //         image 'docker:latest'?
+    //         image 'docker:cli'
     //         args '-v /var/run/docker.sock:/var/run/docker.sock'
     //     }
     // }
     agent any
-
     options {
         buildDiscarder(logRotator(numToKeepStr: '10'))
         timestamps()
@@ -59,21 +58,48 @@ pipeline {
             }
         }
 
-                stage('🐳 Build Docker Image') {
-                steps {
-                        sh '''
-                        docker build -t laravel-devops:${BUILD_TAG} .
-                        '''
+        stage('🐳 Docker Build') {
+            steps {
+                sh """
+                    echo "Building: ${CI_IMAGE}"
+
+                    docker build \\
+                        --tag ${CI_IMAGE} \\
+                        --file Dockerfile \\
+                        .
+
+                    echo "✅ Build successful"
+                    docker images ${CI_IMAGE}
+                """
             }
         }
-                stage('🧪 Verify Image') {
-                    steps {
-                        sh '''
-                        echo "=== Image Verification ==="
-                        docker run --rm --entrypoint="" laravel-devops:${IMAGE_TAG} php artisan --version
-                        '''
-                    }
-               }
+
+        stage('🧪 Verify Image') {
+            steps {
+                sh """
+                    echo "=== Image Verification ==="
+
+                    echo "1. Checking Laravel core (artisan) exists..."
+                    docker run --rm --entrypoint ls ${CI_IMAGE} -lh /var/www/artisan
+                    echo "✅ Artisan found"
+
+                    echo "2. Checking PHP runtime..."
+                    docker run --rm --entrypoint php ${CI_IMAGE} -v
+                    echo "✅ PHP OK"
+
+                    echo "3. Verifying required PostgreSQL extensions are loaded..."
+                    docker run --rm --entrypoint sh ${CI_IMAGE} -c "php -m | grep pdo_pgsql"
+                    echo "✅ PostgreSQL PDO OK"
+
+                    echo "4. Testing PHP-FPM configuration syntax..."
+                    docker run --rm --entrypoint php-fpm ${CI_IMAGE} -t
+                    echo "✅ PHP-FPM config OK"
+
+                    echo "✅ Image verification passed"
+                """
+            }
+        }
+
         stage('🔒 Security Scan') {
             steps {
                 sh """
